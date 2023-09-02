@@ -88,6 +88,9 @@ int main(void) {
 
 	// Get a handle for our "MVP" uniform
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	// handles for view/model uniforms
+	GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
+	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load data into buffers
 	GLuint vertexbuffer;
@@ -100,6 +103,16 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
 
+	GLuint normalbuffer;
+	glGenBuffers(1, &normalbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+
+	// Get a handle for our "LightPosition" uniform
+	glUseProgram(programID);
+	GLuint LightPosID = glGetUniformLocation(programID, "LightPosition_worldspace");
+	GLuint LightColorID = glGetUniformLocation(programID, "LightColor");
+	GLuint LightPowerID = glGetUniformLocation(programID, "LightPower");
 
 	double lastTime = glfwGetTime();
 	int nFrames = 0;
@@ -132,6 +145,16 @@ int main(void) {
 		// Send our transformation to the currently bound shader, 
 		// in the "MVP" uniform
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+
+		// set light properties in uniforms
+		glm::vec3 lightPos = glm::vec3(5, 5, 5);
+		glm::vec3 lightColor = glm::vec3(1, 1, 1);
+		GLfloat lightPower = 100.0f;
+		glUniform3f(LightPosID, lightPos.x, lightPos.y, lightPos.z);
+		glUniform3f(LightColorID, lightColor.x, lightColor.y, lightColor.z);
+		glUniform1f(LightPowerID, lightPower);
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
@@ -157,12 +180,24 @@ int main(void) {
 			(void*)0                          // array buffer offset
 		);
 
+		// 3rd attribute buffer : normals
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+		glVertexAttribPointer(
+			2,                                // attribute
+			3,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
 
 		// Draw the triangle !
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
 
 		// Swap buffers
 		glfwSwapBuffers(window);
@@ -173,6 +208,7 @@ int main(void) {
 
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
+	glDeleteBuffers(1, &normalbuffer);
 	glDeleteProgram(programID);
 	glDeleteVertexArrays(1, &VertexArrayID);
 	// Close OpenGL window and terminate GLFW
