@@ -18,6 +18,12 @@ using namespace glm;
 #include <common/controls.hpp>
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
+#include "boids.hpp"
+
+void computeMatrices() {
+	computeMatricesFromInputs();
+	computeBoidModelMatrices();
+}
 
 
 int main(void) {
@@ -117,8 +123,10 @@ int main(void) {
 	double lastTime = glfwGetTime();
 	int nFrames = 0;
 
-	do {
+	int nBoids = 80;
+	createBoids(nBoids);
 
+	do {
 		// Measure speed
 		double currentTime = glfwGetTime();
 		nFrames++;
@@ -135,69 +143,76 @@ int main(void) {
 		// Use our shader
 		glUseProgram(programID);
 
-		// Compute the MVP matrix from keyboard and mouse input
-		computeMatricesFromInputs();
-		glm::mat4 ProjectionMatrix = getProjectionMatrix();
-		glm::mat4 ViewMatrix = getViewMatrix();
-		glm::mat4 ModelMatrix = glm::mat4(1.0);
-		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-
 		// set light properties in uniforms
-		glm::vec3 lightPos = glm::vec3(5, 5, 5);
+		glm::vec3 lightPos = glm::vec3(0, 0, 0);
 		glm::vec3 lightColor = glm::vec3(1, 1, 1);
 		GLfloat lightPower = 100.0f;
 		glUniform3f(LightPosID, lightPos.x, lightPos.y, lightPos.z);
 		glUniform3f(LightColorID, lightColor.x, lightColor.y, lightColor.z);
 		glUniform1f(LightPowerID, lightPower);
 
-		// 1rst attribute buffer : vertices
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-		glVertexAttribPointer(
-			0,                  // attribute
-			3,                  // size
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-		);
+		// Compute the MVP matrices from keyboard and mouse inputs
+		// and updated boid positions
+		computeMatrices();
+		std::vector<glm::mat4> modelMatrices = getModelMatrices();
+		glm::mat4 ProjectionMatrix = getProjectionMatrix();
+		glm::mat4 ViewMatrix = getViewMatrix();
 
-		// 2nd attribute buffer : UVs
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-		glVertexAttribPointer(
-			1,                                // attribute
-			2,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
+		for (int i = 0; i < nBoids; i++) {
+			// todo : optimize draw calls + VBO indexing
 
-		// 3rd attribute buffer : normals
-		glEnableVertexAttribArray(2);
-		glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-		glVertexAttribPointer(
-			2,                                // attribute
-			3,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
+			glm::mat4 ModelMatrix = modelMatrices[i];
+			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
-		// Draw the triangle !
-		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+			// Send our transformation to the currently bound shader,
+			// in the "MVP" uniform
+			glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+			glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
 
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
+			// 1rst attribute buffer : vertices
+			glEnableVertexAttribArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+			glVertexAttribPointer(
+				0,                  // attribute
+				3,                  // size
+				GL_FLOAT,           // type
+				GL_FALSE,           // normalized?
+				0,                  // stride
+				(void*)0            // array buffer offset
+			);
+
+			// 2nd attribute buffer : UVs
+			glEnableVertexAttribArray(1);
+			glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+			glVertexAttribPointer(
+				1,                                // attribute
+				2,                                // size
+				GL_FLOAT,                         // type
+				GL_FALSE,                         // normalized?
+				0,                                // stride
+				(void*)0                          // array buffer offset
+			);
+
+			// 3rd attribute buffer : normals
+			glEnableVertexAttribArray(2);
+			glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+			glVertexAttribPointer(
+				2,                                // attribute
+				3,                                // size
+				GL_FLOAT,                         // type
+				GL_FALSE,                         // normalized?
+				0,                                // stride
+				(void*)0                          // array buffer offset
+			);
+
+			// Draw a boid!
+			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+			glDisableVertexAttribArray(0);
+			glDisableVertexAttribArray(1);
+			glDisableVertexAttribArray(2);
+		}
 
 		// Swap buffers
 		glfwSwapBuffers(window);
