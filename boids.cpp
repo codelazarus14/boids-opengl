@@ -1,15 +1,14 @@
-#include <random>
-#include <vector>
-
-#include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/quaternion.hpp>
-
-#include "boids.hpp"
 using namespace glm;
+
+#include <GLFW/glfw3.h>
+
+#include <random>
+#include <vector>
+#include "boids.hpp"
 
 Boid::Boid(glm::vec3 newPos, glm::vec3 newVel, glm::vec3 newColor) {
 	pos = newPos;
@@ -24,14 +23,14 @@ std::vector<glm::mat4> getModelMatrices() {
 	return ModelMatrices;
 }
 
-float radius = 2.0f;
+float radius = 4.0f;
 float cohesion = 0.25f;
-float velocity = 0.1f;
+float N = 0.1;
 float A = 10;
-float r0 = 0.75f;
+float r0 = 2.0f;
 // gravity pulling boids toward center of viewport
 glm::vec3 blackHole = glm::vec3();
-float gravity = 10.0f;
+float gravity = 0.05f;
 float dt = 0.1f;
 // change in color between boids with many/few neighbors
 float colorChange = 0.25f;
@@ -39,10 +38,10 @@ float colorChange = 0.25f;
 glm::vec3 noise() {
 	std::random_device rd;	// a seed source for the random number engine
 	std::mt19937 gen(rd());	// mersenne_twister_engine seeded with rd()
-	std::uniform_int_distribution<> distrib(1, 100);
+	std::uniform_int_distribution<> distrib(-50, 50);
 
 	glm::vec3 random = glm::normalize(glm::vec3(distrib(gen), distrib(gen), distrib(gen)));
-	return velocity * random;
+	return N * random;
 }
 
 glm::vec3 centerPull(Boid b) {
@@ -51,7 +50,7 @@ glm::vec3 centerPull(Boid b) {
 }
 
 glm::vec3 aimFor(glm::vec3 targetPos, Boid b) {
-	return targetPos - b.pos - b.vel;
+	return targetPos - b.pos;
 }
 
 glm::vec3 threeLaws(int currIdx) {
@@ -133,7 +132,7 @@ void createBoids(int nBoids) {
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> distrib(-50, 50);
+	std::uniform_int_distribution<> distrib(-100, 100);
 
 	for (int i = 0; i < nBoids; i++) {
 		// place boids at random positions around center w random velocities
@@ -149,27 +148,23 @@ void createBoids(int nBoids) {
 }
 
 void computeBoidModelMatrices() {
-	static double lastTime = glfwGetTime();
-
-	double currentTime = glfwGetTime();
-	float deltaTime = float(currentTime - lastTime) * dt;
 
 	for (int i = 0; i < Boids.size(); i++) {
 		Boid& b = Boids[i];
-		b.pos += b.vel * deltaTime;
+		b.pos += b.vel * dt;
+
+		glm::vec3 components[3] = {
+			threeLaws(i) * dt,
+			noise() * std::sqrt(dt),
+			centerPull(b) * dt
+		};
+
 		// unit length vel
-		b.vel += glm::normalize(
-			threeLaws(i) * deltaTime +
-			noise() * std::sqrt(deltaTime) +
-			centerPull(b) * deltaTime
-		);
+		b.vel = glm::normalize(b.vel + components[0] + components[1] + components[2]);
+
 		glm::mat4 translateMatrix = glm::translate(glm::mat4(), b.pos);
 		// rotate arrows to face the direction they're heading in
 		glm::mat4 rotationMatrix = rotateBetweenVectors(vec3(0, 1.0f, 0), b.vel);
 		ModelMatrices[i] = translateMatrix * rotationMatrix;
 	}
-	//printf("%f %f %f\n", Boids[0].pos.x, Boids[0].pos.y, Boids[0].pos.z);
-	//printf("%f\n", glm::length(Boids[0].vel));
-
-	lastTime = currentTime;
 }

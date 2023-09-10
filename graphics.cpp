@@ -135,7 +135,7 @@ int main(void) {
 	double lastTime = glfwGetTime();
 	int nFrames = 0;
 
-	int nBoids = 80;
+	int nBoids = 100;
 	createBoids(nBoids);
 
 	do {
@@ -171,7 +171,7 @@ int main(void) {
 		glm::mat4 ViewMatrix = getViewMatrix();
 
 		for (int i = 0; i < nBoids; i++) {
-			// todo: optimize draw calls
+			// todo: optimize draw calls, set colors, why are they disappearing
 
 			glm::mat4 ModelMatrix = modelMatrices[i];
 			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
