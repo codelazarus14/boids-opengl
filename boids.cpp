@@ -39,7 +39,7 @@ float r0 = 4.0f;
 // gravity pulling boids toward center of viewport
 glm::vec3 blackHole = glm::vec3();
 float gravity = 0.05f;
-float dt = 0.1f;
+float dt = 0.025f;
 // change in color between boids with many/few neighbors
 float colorChange = 2.5f;
 
