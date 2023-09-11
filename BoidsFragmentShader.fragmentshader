@@ -6,6 +6,7 @@ in vec3 Position_worldspace;
 in vec3 Normal_cameraspace;
 in vec3 EyeDirection_cameraspace;
 in vec3 LightDirection_cameraspace;
+in vec3 DiffuseColor;
 
 // Ouput data
 out vec3 color;
@@ -21,7 +22,7 @@ void main(){
 
 	// Output color = color of the texture at the specified UV
 	//vec3 MaterialDiffuseColor = texture( myTextureSampler, UV ).rgb;
-	vec3 MaterialDiffuseColor = vec3(0.2, 0.3, 0.5);
+	vec3 MaterialDiffuseColor = DiffuseColor;
 	vec3 MaterialAmbientColor = vec3(0.8, 0.8, 0.8) * MaterialDiffuseColor;
 	vec3 MaterialSpecularColor = vec3(0.3,0.3,0.3);
 

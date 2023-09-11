@@ -7,4 +7,5 @@ public:
 };
 void createBoids(int nBoids);
 std::vector<glm::mat4> getModelMatrices();
+std::vector<glm::vec3> getBoidColors();
 void computeBoidModelMatrices();

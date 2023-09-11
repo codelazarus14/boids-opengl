@@ -23,17 +23,25 @@ std::vector<glm::mat4> getModelMatrices() {
 	return ModelMatrices;
 }
 
-float radius = 4.0f;
+std::vector<glm::vec3> getBoidColors() {
+	std::vector<glm::vec3> colors;
+	for (int i = 0; i < Boids.size(); i++) {
+		colors.push_back(Boids[i].color);
+	}
+	return colors;
+}
+
+float radius = 8.0f;
 float cohesion = 0.25f;
 float N = 0.1;
 float A = 10;
-float r0 = 2.0f;
+float r0 = 4.0f;
 // gravity pulling boids toward center of viewport
 glm::vec3 blackHole = glm::vec3();
 float gravity = 0.05f;
 float dt = 0.1f;
 // change in color between boids with many/few neighbors
-float colorChange = 0.25f;
+float colorChange = 2.5f;
 
 glm::vec3 noise() {
 	std::random_device rd;	// a seed source for the random number engine
@@ -59,7 +67,7 @@ glm::vec3 threeLaws(int currIdx) {
 	glm::vec3 totalVel = glm::vec3();
 	glm::vec3 totalRepel = glm::vec3();
 	glm::vec3 averageVel = glm::vec3();
-	Boid currBoid = Boids[currIdx];
+	Boid& currBoid = Boids[currIdx];
 
 	for (int i = 0; i < Boids.size(); i++) {
 		if (i != currIdx) {
@@ -85,7 +93,8 @@ glm::vec3 threeLaws(int currIdx) {
 		averageVel += cohesion * aimFor(averagePos, currBoid);
 		averageVel += glm::vec3(totalRepel.x / neighborCount, totalRepel.y / neighborCount, totalRepel.z / neighborCount);
 		// change boid colors based on neighbors
-		currBoid.color = glm::vec3(0, 1, glm::normalize(colorChange * neighborCount));
+		float colorScale = Boids.size() / colorChange;
+		currBoid.color = glm::vec3(0, neighborCount / colorScale, 1 - neighborCount / colorScale);
 	}
 	return averageVel;
 }
@@ -139,7 +148,7 @@ void createBoids(int nBoids) {
 		Boid newBoid(
 			glm::vec3(distrib(gen), distrib(gen), distrib(gen)),
 			glm::normalize(glm::vec3(distrib(gen), distrib(gen), distrib(gen))),
-			glm::vec3(0, 1, 0)
+			glm::vec3(0, 0, 1)
 		);
 		Boids.push_back(newBoid);
 		glm::mat4 translateMatrix = glm::translate(glm::mat4(), newBoid.pos);
