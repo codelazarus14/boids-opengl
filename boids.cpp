@@ -31,9 +31,9 @@ std::vector<glm::vec3> getBoidColors() {
 	return colors;
 }
 
-float radius = 8.0f;
+float radius = 6.0f;
 float cohesion = 0.25f;
-float N = 0.1;
+float N = 0.1f;
 float A = 10;
 float r0 = 4.0f;
 // gravity pulling boids toward center of viewport
@@ -41,7 +41,7 @@ glm::vec3 blackHole = glm::vec3();
 float gravity = 0.05f;
 float dt = 0.025f;
 // change in color between boids with many/few neighbors
-float colorChange = 2.5f;
+float colorChange = 15.0f;
 
 glm::vec3 noise() {
 	std::random_device rd;	// a seed source for the random number engine

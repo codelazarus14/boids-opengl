@@ -6,7 +6,6 @@ in vec3 Position_worldspace;
 in vec3 Normal_cameraspace;
 in vec3 EyeDirection_cameraspace;
 in vec3 LightDirection_cameraspace;
-in vec3 DiffuseColor;
 
 // Ouput data
 out vec3 color;
@@ -17,6 +16,7 @@ uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 uniform vec3 LightColor;
 uniform float LightPower;
+uniform vec3 DiffuseColor;
 
 void main(){
 

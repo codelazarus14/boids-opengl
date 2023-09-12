@@ -126,14 +126,12 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_normals.size() * sizeof(glm::vec3), &indexed_normals[0], GL_STATIC_DRAW);
 
-	GLuint colorbuffer;
-	glGenBuffers(1, &colorbuffer);
-
 	// Get a handle for our "LightPosition" uniform
 	glUseProgram(programID);
 	GLuint LightPosID = glGetUniformLocation(programID, "LightPosition_worldspace");
 	GLuint LightColorID = glGetUniformLocation(programID, "LightColor");
 	GLuint LightPowerID = glGetUniformLocation(programID, "LightPower");
+	GLuint DiffuseColorID = glGetUniformLocation(programID, "DiffuseColor");
 
 	double lastTime = glfwGetTime();
 	int nFrames = 0;
@@ -158,14 +156,6 @@ int main(void) {
 		// Use our shader
 		glUseProgram(programID);
 
-		// set light properties in uniforms
-		/*glm::vec3 lightPos = glm::vec3(0, 0, 0);
-		glm::vec3 lightColor = glm::vec3(1, 1, 1);
-		GLfloat lightPower = 100.0f;
-		glUniform3f(LightPosID, lightPos.x, lightPos.y, lightPos.z);
-		glUniform3f(LightColorID, lightColor.x, lightColor.y, lightColor.z);
-		glUniform1f(LightPowerID, lightPower);*/
-
 		// Compute the MVP matrices from keyboard and mouse inputs
 		// and updated boids
 		computeMatrices();
@@ -174,25 +164,21 @@ int main(void) {
 		glm::mat4 ViewMatrix = getViewMatrix();
 
 		std::vector<glm::vec3> boidColors = getBoidColors();
-		// have to duplicate color values for each vertex
-		std::vector<glm::vec3> boidVertexColors;
-		for (int i = 0; i < boidColors.size(); i++) {
-			for (int j = 0; j < indexed_vertices.size(); j++) {
-				boidVertexColors.push_back(boidColors[i]);
-			}
-		}
 
 		for (int i = 0; i < nBoids; i++) {
-			// todo: optimize draw calls, why are they disappearing
+			// todo: why are they disappearing
 
 			glm::mat4 ModelMatrix = modelMatrices[i];
 			glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+			glm::vec3 boidColor = boidColors[i];
 
 			// Send our transformation to the currently bound shader,
 			// in the "MVP" uniform
 			glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 			glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+			// Set boid color
+			glUniform3f(DiffuseColorID, boidColor.x, boidColor.y, boidColor.z);
 
 			// 1rst attribute buffer : vertices
 			glEnableVertexAttribArray(0);
@@ -230,19 +216,6 @@ int main(void) {
 				(void*)0                          // array buffer offset
 			);
 
-			glEnableVertexAttribArray(3);
-			glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-			// buffer offset = # vertices per boid * current boid idx
-			glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &boidVertexColors[i * indexed_vertices.size()], GL_STATIC_DRAW);
-			glVertexAttribPointer(
-				3,
-				3,
-				GL_FLOAT,
-				GL_FALSE,
-				0,
-				(void*)0
-			);
-
 			// Draw a boid!
 			//glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
@@ -256,7 +229,6 @@ int main(void) {
 			glDisableVertexAttribArray(0);
 			glDisableVertexAttribArray(1);
 			glDisableVertexAttribArray(2);
-			glDisableVertexAttribArray(3);
 		}
 
 		// Swap buffers
@@ -266,10 +238,10 @@ int main(void) {
 	} while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
 		glfwWindowShouldClose(window) == 0);
 
+	glDeleteBuffers(1, &elementbuffer);
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
 	glDeleteBuffers(1, &normalbuffer);
-	glDeleteBuffers(1, &colorbuffer);
 	glDeleteProgram(programID);
 	glDeleteVertexArrays(1, &VertexArrayID);
 	// Close OpenGL window and terminate GLFW

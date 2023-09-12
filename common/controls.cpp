@@ -20,7 +20,7 @@ glm::mat4 getProjectionMatrix() {
 }
 
 // center camera w positive Z
-glm::vec3 position = glm::vec3(0, 0, 150);
+glm::vec3 position = glm::vec3(0, 0, 200);
 
 float horizontalAngle = 3.14f;
 float verticalAngle = 0.0f;
