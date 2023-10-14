@@ -146,6 +146,7 @@
   <ItemGroup>
     <None Include="BoidsFragmentShader.fragmentshader" />
     <None Include="BoidsVertexShader.vertexshader" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
