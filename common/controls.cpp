@@ -29,8 +29,8 @@ float initialFOV = 45.0f;
 float speed = 3.0f;
 float mouseSpeed = 0.005f;
 
-void computeMatricesFromInputs(int controlType) {
-	// only set once on first function call
+void computeMatricesFromInputs(CameraControlType controlType) {
+	// set init time on first call
 	static double lastTime = glfwGetTime();
 
 	double currentTime = glfwGetTime();
@@ -43,7 +43,7 @@ void computeMatricesFromInputs(int controlType) {
 	glfwGetCursorPos(window, &xpos, &ypos);
 
 	// reset cursor after getting position
-	glfwSetCursorPos(window, width / 2, height / 2);
+	glfwSetCursorPos(window, width / 2.0, height / 2.0);
 
 	// compute viewing angles based on input
 	horizontalAngle += mouseSpeed * float(width / 2 - xpos);
@@ -70,12 +70,15 @@ void computeMatricesFromInputs(int controlType) {
 	glm::vec3 up = glm::cross(right, forward);
 
 	float radius = position.z;
+	// up/down strafe for FPS
+	glm::vec3 posY(0, 1.0f, 0);
 
 	switch (controlType) {
-	case 1:
-		// todo: not working
-		position = glm::vec3(radius * cos(horizontalAngle), 0, radius * sin(verticalAngle));
-	default:
+	case FIXED:
+		forward = glm::vec3(0) - position;
+		up = glm::vec3(0, 1, 0);
+		break;
+	case FPS:
 		// wasd/spectator controls
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 			position += forward * deltaTime * speed;
@@ -85,12 +88,14 @@ void computeMatricesFromInputs(int controlType) {
 			position += right * deltaTime * speed;
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 			position -= right * deltaTime * speed;
-		// up/down strafe
-		glm::vec3 posY(0, 1.0f, 0);
 		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 			position += posY * deltaTime * speed;
 		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 			position -= posY * deltaTime * speed;
+		break;
+	case ORBITAL:
+		// todo: not working
+		position = glm::vec3(radius * cos(horizontalAngle), 0, radius * sin(verticalAngle));
 		break;
 	}
 
