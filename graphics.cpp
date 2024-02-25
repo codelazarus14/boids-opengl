@@ -80,10 +80,6 @@ int main(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_BLEND); // comment out to leave enabled
 
-	GLuint VertexArrayID;
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
-
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders("BoidsVertexShader.vertexshader", "BoidsFragmentShader.fragmentshader");
 
@@ -105,6 +101,10 @@ int main(void) {
 	std::vector<glm::vec3> indexed_normals;
 	indexVBO(vertices, uvs, normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
 
+	GLuint VertexArrayID;
+	glGenVertexArrays(1, &VertexArrayID);
+	glBindVertexArray(VertexArrayID);
+
 	// Load data into buffers
 	GLuint elementbuffer;
 	glGenBuffers(1, &elementbuffer);
@@ -115,16 +115,31 @@ int main(void) {
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(
+		0,                  // attribute
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+	glEnableVertexAttribArray(0);
 
 	GLuint uvbuffer;
 	glGenBuffers(1, &uvbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_uvs.size() * sizeof(glm::vec2), &indexed_uvs[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(1);
 
 	GLuint normalbuffer;
 	glGenBuffers(1, &normalbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_normals.size() * sizeof(glm::vec3), &indexed_normals[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
 
 	// Get a handle for our "LightPosition" uniform
 	glUseProgram(programID);
@@ -143,7 +158,7 @@ int main(void) {
 		// Measure speed
 		double currentTime = glfwGetTime();
 		nFrames++;
-		if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1sec ago
+		if (currentTime - lastTime >= 1.0) {
 			// printf and reset
 			printf("%f ms/frame\n", 1000.0 / double(nFrames));
 			nFrames = 0;
@@ -153,9 +168,6 @@ int main(void) {
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Use our shader
-		glUseProgram(programID);
-
 		// Compute the MVP matrices from keyboard and mouse inputs
 		// and updated boids
 		computeMatrices();
@@ -164,6 +176,8 @@ int main(void) {
 		glm::mat4 ViewMatrix = getViewMatrix();
 
 		std::vector<glm::vec3> boidColors = getBoidColors();
+
+		glBindVertexArray(VertexArrayID);
 
 		for (int i = 0; i < nBoids; i++) {
 			// todo: why are they disappearing
@@ -180,44 +194,7 @@ int main(void) {
 			// Set boid color
 			glUniform3f(DiffuseColorID, boidColor.x, boidColor.y, boidColor.z);
 
-			// 1rst attribute buffer : vertices
-			glEnableVertexAttribArray(0);
-			glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-			glVertexAttribPointer(
-				0,                  // attribute
-				3,                  // size
-				GL_FLOAT,           // type
-				GL_FALSE,           // normalized?
-				0,                  // stride
-				(void*)0            // array buffer offset
-			);
-
-			// 2nd attribute buffer : UVs
-			glEnableVertexAttribArray(1);
-			glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-			glVertexAttribPointer(
-				1,                                // attribute
-				2,                                // size
-				GL_FLOAT,                         // type
-				GL_FALSE,                         // normalized?
-				0,                                // stride
-				(void*)0                          // array buffer offset
-			);
-
-			// 3rd attribute buffer : normals
-			glEnableVertexAttribArray(2);
-			glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-			glVertexAttribPointer(
-				2,                                // attribute
-				3,                                // size
-				GL_FLOAT,                         // type
-				GL_FALSE,                         // normalized?
-				0,                                // stride
-				(void*)0                          // array buffer offset
-			);
-
 			// Draw a boid!
-			//glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 			glDrawElements(
 				GL_TRIANGLES,
@@ -225,11 +202,9 @@ int main(void) {
 				GL_UNSIGNED_SHORT,
 				(void*)0
 			);
-
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
-			glDisableVertexAttribArray(2);
 		}
+
+		glBindVertexArray(0);
 
 		// Swap buffers
 		glfwSwapBuffers(window);
